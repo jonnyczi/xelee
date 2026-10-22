@@ -1,6 +1,7 @@
 # Xelee
 
-A mixed reality port of Super Smash Bros. Melee to the Quest 3 platform.
+A mixed reality port of Super Smash Bros. Melee to the Quest 3 platform, and to
+the Steam Frame.
 This is Smash like you've never seen it before, with fighters and stages floating
 in your room. Full Slippi support means that you can play online, and all 1-P content
 has been tailored to work great in MR.
@@ -32,6 +33,7 @@ is GPL-3.0-or-later. Details under [License](#license).
 ## Requirements
 
 - A **Meta Quest 3 or 3S**. <!-- TODO: say whether Quest 2 / Pro are supported or untested -->
+  Or a **Steam Frame**: see [Steam Frame](#steam-frame).
 - Your own **Super Smash Bros. Melee NTSC-U 1.02** disc image (`.iso`, `.gcm`,
   `.ciso` or `.rvz`). The launcher checks it against the Redump database.
 - **Developer mode** on the headset, to sideload the APK.
@@ -46,6 +48,16 @@ is GPL-3.0-or-later. Details under [License](#license).
 3. Copy your disc image onto the headset (for example into `Download`, over
    USB or with `adb push`).
 4. Open **Xelee** from your library (it's under *Unknown Sources*).
+
+### Steam Frame
+
+The Steam Frame runs its own build, a native Linux one
+(`Xelee-SteamFrame-arm64.tar.gz`, built by CI): unpack it in your home folder,
+put your disc image in `Games` or `Downloads`, add `xelee.sh` to Steam as a
+non-Steam game, and set the headset to 120 Hz. The room shows through the
+Frame's passthrough; its controllers play with A/B/X/Y and Menu (Start) on the
+right, the D-pad on the left, Z on either shoulder button, and the grips grab.
+[docs/steam-frame.md](docs/steam-frame.md) has the details.
 
 ## AI Disclosure
 
