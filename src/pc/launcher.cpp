@@ -1245,6 +1245,10 @@ public:
         text("app-version", pc::get_app_version());
         text("check-status", "Current version: " + pc::get_app_version());
         text("disc-note", disc_note);
+#ifdef MELEE_STEAM_FRAME
+        if (auto* e = element("spacewarp-row"))  // SteamVR runs it unsteadily: off there
+            e->SetProperty("display", "none");
+#endif
 #ifndef MELEE_SPATIAL_AUDIO
         if (auto* e = element("spatial-row"))  // built without Steam Audio
             e->SetProperty("display", "none");
