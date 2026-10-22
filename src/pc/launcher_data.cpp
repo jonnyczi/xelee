@@ -2,7 +2,9 @@
 #include "launcher_data.hpp"
 #include "disc_open.h"
 #include <nod.h>
+#include <algorithm>
 #include <array>
+#include <cctype>
 #include <cmath>
 #include <cstring>
 #include <fstream>
@@ -373,9 +375,9 @@ Preferences load_preferences(const std::filesystem::path& path) {
                 prefs.scale = value;
         } else if (key == "check_updates" || key == "custom_textures" || key == "unlock_all" ||
                    key == "frozen_stadium" || key == "free_camera" || key == "ucf" ||
-                   key == "slippi_fixes" || key == "cstick_1p" || key == "reverb" || key == "spatial_audio" ||
-                   key == "stage_sounds" || key == "xr_spacewarp" ||
-                   key == "xr_shadow" || key == "xr_place_hold")
+                   key == "slippi_fixes" || key == "cstick_1p" || key == "reverb" ||
+                   key == "spatial_audio" || key == "stage_sounds" || key == "xr_spacewarp" ||
+                   key == "xr_shadow" || key == "xr_place_hold" || key == "xr_full_vr")
         {
             int value;
             if (row >> value && (value == 0 || value == 1)) {
@@ -407,6 +409,8 @@ Preferences load_preferences(const std::filesystem::path& path) {
                     prefs.xr_shadow = value;
                 else if (key == "xr_place_hold")
                     prefs.xr_place_hold = value;
+                else if (key == "xr_full_vr")
+                    prefs.xr_full_vr = value;
             }
         } else if (key == "xr_resolution") {
             int value;
@@ -454,9 +458,9 @@ bool save_preferences(
     text << "reverb " << prefs.reverb << '\n';
     text << "slippi_fixes " << prefs.slippi_fixes << "\ncstick_1p " << prefs.cstick_1p << '\n';
     text << "spatial_audio " << prefs.spatial_audio << "\nstage_sounds " << prefs.stage_sounds
-         << "\nxr_resolution " << prefs.xr_resolution
-         << "\nxr_spacewarp " << prefs.xr_spacewarp << "\nxr_shadow " << prefs.xr_shadow
-         << "\nxr_place_hold " << prefs.xr_place_hold << '\n';
+         << "\nxr_resolution " << prefs.xr_resolution << "\nxr_spacewarp " << prefs.xr_spacewarp
+         << "\nxr_shadow " << prefs.xr_shadow << "\nxr_place_hold " << prefs.xr_place_hold
+         << "\nxr_full_vr " << prefs.xr_full_vr << '\n';
     auto data = text.str();
     size_t done = 0;
     bool ok = true;
@@ -484,5 +488,61 @@ bool save_preferences(
         error = "Could not save launcher settings.";
     }
     return ok;
+}
+
+std::vector<std::string> find_discs(const std::vector<std::filesystem::path>& dirs, size_t limit) {
+    std::vector<std::string> found;
+    for (const auto& dir : dirs) {
+        std::error_code ec;
+        std::vector<std::filesystem::path> files;
+        for (const auto& entry : std::filesystem::directory_iterator(dir, ec)) {
+            std::string ext = entry.path().extension().string();
+            for (auto& c : ext)
+                c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+            if ((ext == ".iso" || ext == ".gcm" || ext == ".ciso" || ext == ".rvz" ||
+                    ext == ".gcz" || ext == ".wia") &&
+                entry.is_regular_file(ec))
+                files.push_back(entry.path());
+        }
+        std::sort(files.begin(), files.end());
+        for (const auto& file : files) {
+            const std::string path = file.string();
+            if (std::find(found.begin(), found.end(), path) == found.end() &&
+                inspect_disc(path).supported)
+                found.push_back(path);
+            if (found.size() >= limit)
+                return found;
+        }
+    }
+    return found;
+}
+
+PadNav pad_nav(
+    PadNavState& state, uint16_t buttons, int8_t stick_x, int8_t stick_y, uint64_t now_ms) {
+    // PADStatus::button: left 0x1, right 0x2, down 0x4, up 0x8, A 0x100, B 0x200, Start 0x1000.
+    PadNav nav;
+    const uint16_t pressed = buttons & ~state.buttons;
+    state.buttons = buttons;
+    if (pressed & 0x0004)
+        nav.step = 1;
+    else if (pressed & 0x0008)
+        nav.step = -1;
+    if (pressed & 0x0001)
+        nav.horizontal = -1;
+    else if (pressed & 0x0002)
+        nav.horizontal = 1;
+    nav.activate = (pressed & (0x0100 | 0x1000)) != 0;
+    nav.back = (pressed & 0x0200) != 0;
+    // The stick, past most of its throw, as the launcher's SDL gamepad does.
+    constexpr int kThrow = 70;
+    if (nav.step == 0 && std::abs(stick_y) > kThrow && now_ms - state.stepped_ms > 200) {
+        nav.step = stick_y > 0 ? -1 : 1;
+        state.stepped_ms = now_ms;
+    }
+    if (nav.horizontal == 0 && std::abs(stick_x) > kThrow && now_ms - state.moved_ms > 150) {
+        nav.horizontal = stick_x > 0 ? 1 : -1;
+        state.moved_ms = now_ms;
+    }
+    return nav;
 }
 }  // namespace launcher
