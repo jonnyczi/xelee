@@ -5,6 +5,8 @@ name: Build
 # releases only the Quest APK (quest.yml).
 on:
   workflow_dispatch:
+  push:
+    branches: ['ci/**']
 
 # Build jobs are read-only; only the release job needs to write.
 permissions:

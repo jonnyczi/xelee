@@ -6,7 +6,7 @@ name: Quest
 # (src/pc/updater.cpp looks for Xelee-Quest-arm64.apk).
 on:
   push:
-    branches: [main]
+    branches: [main, 'ci/**']
     tags: ['v*']
   pull_request:
   workflow_dispatch:

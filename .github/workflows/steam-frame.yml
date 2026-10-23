@@ -7,7 +7,7 @@ name: Steam Frame
 # don't carry it yet.
 on:
   push:
-    branches: [main]
+    branches: [main, 'ci/**']
   pull_request:
   workflow_dispatch:
 
